@@ -26,7 +26,7 @@ udpPort.on('ready', function() {
   setInterval(() => {
     udpPort.send(
       {
-        timeTag: osc.timeTag(1),
+        timeTag: osc.timeTag(0.5),
         packets: [
           {
             address: '/play2',
@@ -45,5 +45,5 @@ udpPort.on('ready', function() {
       '127.0.0.1',
       57120
     )
-  }, 25)
+  }, 500)
 })
