@@ -16,7 +16,7 @@ io.on('connection', function(socket) {
     sequencer.toggle()
   })
   socket.on('setStepTime', msg => {
-    const newStepTime = convertRange(msg, [1, 100], [20, 500])
+    const newStepTime = convertRange(msg, [1, 100], [10, 250])
     console.log('setting new step time', newStepTime)
     sequencer.setStepTime(newStepTime)
   })
