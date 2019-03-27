@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <script src="node_modules/socket.io-client/dist/socket.io.js"></script>
+    <style>
+      button {
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <button onclick="clickme()">Play / Pause</button>
+    </div>
+    <div>
+      <input
+        type="range"
+        min="1"
+        max="100"
+        value="50"
+        oninput="setTempo(this.value)"
+      />
+    </div>
+    <div>
+      <textarea id="rawSequence" onchange="setSequence()"></textarea>
+    </div>
+    <script>
+      const socket = io()
+      function clickme() {
+        socket.emit('toggle', {})
+      }
+
+      function setTempo(e) {
+        socket.emit('setStepTime', e)
+      }
+
+      function setSequence() {
+        const raw = document.getElementById('rawSequence').value
+        const seq = JSON.parse(raw)
+        console.log('setting sequence', seq)
+        socket.emit('setSequence', seq)
+      }
+    </script>
+  </body>
+</html>

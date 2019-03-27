@@ -1,6 +1,6 @@
 const osc = require('osc')
 const maxFutureTime = 250
-const stepTime = 200
+let stepTime = 200
 const smallestTimeLeft = 50 // should be >= 40
 const destinationServer = '127.0.0.1'
 const destinationPort = 57120
@@ -9,7 +9,10 @@ const localAddress = '0.0.0.0'
 const loopTimeout = 10
 
 let sequence = [],
-  playing = false
+  playing = false,
+  toggledOn = false,
+  nextStartTime = null,
+  currentStep = 0
 
 const udpPort = new osc.UDPPort({
   localAddress,
@@ -23,16 +26,16 @@ udpPort.on('ready', function() {
   loop()
 })
 
-function setSequence(newSequence) {
+const setSequence = newSequence => {
   sequence = newSequence
 }
 
-function shouldBatch(nextStartTime) {
+const shouldSchedule = nextStartTime => {
   const diff = nextStartTime - Date.now()
   return diff <= smallestTimeLeft
 }
 
-function getBatch({ startStep, startTime, refTime }) {
+const getSchedule = ({ startStep, startTime, refTime }) => {
   const stepsToBatch = Math.ceil(stepTime / maxFutureTime)
   let numStep = startStep
   let messages = []
@@ -54,16 +57,6 @@ function getBatch({ startStep, startTime, refTime }) {
             },
             { type: 's', value: sequence[numStep] }
           ]
-        },
-        {
-          address: '/play2',
-          args: [
-            {
-              type: 's',
-              value: 's'
-            },
-            { type: 's', value: 'arpy' }
-          ]
         }
       ]
     })
@@ -77,24 +70,27 @@ function getBatch({ startStep, startTime, refTime }) {
   }
 }
 
-function sendMessages(messages) {
+const sendMessages = messages => {
   messages.forEach(message =>
     udpPort.send(message, destinationServer, destinationPort)
   )
 }
 
-let nextStartTime = null
-let currentStep = 0
-
-function loop() {
-  if (!playing) return setTimeout(() => loop, loopTimeout)
-
+const loop = () => {
   const now = Date.now()
-  nextStartTime = nextStartTime === null ? now + 200 : nextStartTime
+  nextStartTime =
+    nextStartTime === null || toggledOn ? now + 200 : nextStartTime
+
+  if (!playing)
+    return setTimeout(() => {
+      loop()
+    }, loopTimeout)
+
+  toggledOn = false
 
   setTimeout(() => {
-    if (shouldBatch(nextStartTime)) {
-      const batch = getBatch({
+    if (shouldSchedule(nextStartTime)) {
+      const batch = getSchedule({
         startStep: currentStep,
         startTime: nextStartTime,
         refTime: now
@@ -110,12 +106,14 @@ function loop() {
   }, loopTimeout)
 }
 
-function stop() {
-  playing = false
+const toggle = () => {
+  playing = !playing
+  toggledOn = playing
+  console.log('sequencer.playing', playing)
 }
 
-function play() {
-  playing = true
+const setStepTime = time => {
+  stepTime = time
 }
 
-module.exports = { setSequence, stop, play }
+module.exports = { setSequence, toggle, setStepTime }
