@@ -6,6 +6,7 @@ const http = require('http').Server(app)
 const io = require('socket.io')(http)
 const convertRange = require('./convertRange')
 const port = 3000
+const testSequence = require('./testSequence')
 
 app.use('/', express.static(path.join(__dirname, 'public')))
 
@@ -26,6 +27,7 @@ io.on('connection', function(socket) {
   })
 })
 
-http.listen(3000, console.log('listening on *:3000'))
+http.listen(port, console.log(`listening on *:${port}`))
 
-sequencer.setSequence([])
+sequencer.setSequence(testSequence)
+sequencer.toggle()

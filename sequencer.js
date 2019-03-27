@@ -1,6 +1,6 @@
 const osc = require('osc')
 const maxFutureTime = 250
-let stepTime = 200
+// let stepTime = 200
 const smallestTimeLeft = 50 // should be >= 40
 const destinationServer = '127.0.0.1'
 const destinationPort = 57120
@@ -27,6 +27,7 @@ udpPort.on('ready', function() {
 })
 
 const setSequence = newSequence => {
+  console.log('new sequence', newSequence)
   sequence = newSequence
 }
 
@@ -35,38 +36,56 @@ const shouldSchedule = nextStartTime => {
   return diff <= smallestTimeLeft
 }
 
+const getStepPackets = sounds => {
+  return sounds.map(sound => ({
+    address: '/play2',
+    args: [
+      {
+        type: 's',
+        value: 's'
+      },
+      { type: 's', value: sound.sample },
+      { type: 's', value: 'gain' },
+      { type: 'f', value: sound.gain || 1 }
+    ]
+  }))
+}
+
 const getSchedule = ({ startStep, startTime, refTime }) => {
+  const stepTime = sequence.stepTime
   const stepsToBatch = Math.ceil(stepTime / maxFutureTime)
+  const steps = sequence.steps
   let numStep = startStep
   let messages = []
+  let accumulation = 0
 
   for (let i = 0; i < stepsToBatch; i++) {
-    if (!sequence || sequence.length === 0 || sequence[numStep] === '') continue
+    if (!sequence || steps.length === 0 || steps[numStep] === '') {
+      continue
+    }
+
+    const { sounds, timeMult } = steps[numStep]
+
     messages.push({
       timeTag: osc.timeTag(
-        (startTime + i * stepTime - refTime) / 1000,
+        (startTime + i * stepTime - refTime + accumulation) / 1000,
         refTime
       ),
-      packets: [
-        {
-          address: '/play2',
-          args: [
-            {
-              type: 's',
-              value: 's'
-            },
-            { type: 's', value: sequence[numStep] }
-          ]
-        }
-      ]
+      packets: getStepPackets(sounds)
     })
-    numStep = numStep + 1 >= sequence.length ? 0 : numStep + 1
+    numStep = numStep + 1 >= steps.length ? 0 : numStep + 1
+
+    if (timeMult && timeMult !== 1.0) {
+      accumulation += (timeMult - 1) * stepTime
+    }
   }
+
   return {
     messages,
-    nextStartTime: startTime + stepsToBatch * stepTime,
-    nextStartStep:
-      startStep + stepsToBatch >= sequence.length ? 0 : startStep + stepsToBatch
+    nextStartTime: startTime + stepsToBatch * stepTime + accumulation,
+    // nextStartStep:
+    //   startStep + stepsToBatch >= steps.length ? 0 : startStep + stepsToBatch
+    nextStartStep: (startStep + stepsToBatch) % steps.length
   }
 }
 
@@ -112,8 +131,4 @@ const toggle = () => {
   console.log('sequencer.playing', playing)
 }
 
-const setStepTime = time => {
-  stepTime = time
-}
-
-module.exports = { setSequence, toggle, setStepTime }
+module.exports = { setSequence, toggle }
