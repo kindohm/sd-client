@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import Instrument from './Instrument';
+import StepTimeMult from './StepTimeMult';
 
 class App extends Component {
   state = {
     stepTime: 200,
     numSteps: 5,
+    timeMults: [1, 1, 1, 1, 1],
     instruments: [
       {
         name: 'kick',
@@ -16,8 +18,7 @@ class App extends Component {
         s: 'cp',
         steps: [{ vel: 0 }, { vel: 0 }, { vel: 1 }, { vel: 0 }, { vel: 1 }]
       }
-    ],
-    view: 'gains'
+    ]
   };
 
   constructor() {
@@ -26,7 +27,6 @@ class App extends Component {
     this.sendSequence = this.sendSequence.bind(this);
     this.handleStepTimeChange = this.handleStepTimeChange.bind(this);
     this.handleNumStepsChange = this.handleNumStepsChange.bind(this);
-    this.handleViewChanged = this.handleViewChanged.bind(this);
   }
 
   componentDidMount() {}
@@ -78,10 +78,6 @@ class App extends Component {
     });
   }
 
-  handleViewChanged(event) {
-    this.setState({ ...this.state, view: event.target.value });
-  }
-
   handleStepTimeChange(event) {
     this.setState(
       { ...this.state, stepTime: parseFloat(event.target.value) },
@@ -89,6 +85,21 @@ class App extends Component {
         this.sendSequence();
       }
     );
+  }
+
+  handleTimeMultChanged(index, newVal) {
+    // 1. Make a shallow copy of the items
+    let mults = [...this.state.timeMults];
+    // 2. Make a shallow copy of the item you want to mutate
+    let mult = { ...mults[index] };
+    // 3. Replace the property you're intested in
+    mult = parseFloat(newVal);
+    // 4. Put it back into our array. N.B. we *are* mutating the array here, but that's why we made a copy first
+    mults[index] = mult;
+    // 5. Set the state to our new copy
+    this.setState({ ...this.state, timeMults: mults }, () => {
+      this.sendSequence();
+    });
   }
 
   handleNumStepsChange(event) {
@@ -107,8 +118,23 @@ class App extends Component {
         return inst;
       }
     });
+
+    const newTimeMults = [...this.state.timeMults];
+    if (newTimeMults.length < newNumSteps) {
+      newTimeMults.splice(
+        newTimeMults.length - 1,
+        0,
+        newNumSteps - newTimeMults.length
+      );
+    }
+
     this.setState(
-      { ...this.state, numSteps: newNumSteps, instruments: newInstruments },
+      {
+        ...this.state,
+        numSteps: newNumSteps,
+        instruments: newInstruments,
+        timeMults: newTimeMults
+      },
       () => {
         this.sendSequence();
       }
@@ -116,7 +142,18 @@ class App extends Component {
   }
 
   render() {
-    console.log('state', this.state);
+    const timeMults = this.state.timeMults
+      .slice(0, this.state.numSteps)
+      .map((mult, index) => {
+        return (
+          <StepTimeMult
+            key={index}
+            value={mult}
+            timeMultChanged={e => this.handleTimeMultChanged(index, e)}
+          />
+        );
+      });
+
     const instruments = this.state.instruments.map(instrument => {
       return (
         <Instrument
@@ -163,12 +200,10 @@ class App extends Component {
               />
             </div>
             <div>
-              <select onChange={this.handleViewChanged}>
-                <option value="gains">gains</option>
-                <option value="mults">mults</option>
-              </select>
+              <h3>Time Mults</h3>
+              {timeMults}
             </div>
-            {instruments}
+            <div>{instruments}</div>
           </div>
         </header>
       </div>

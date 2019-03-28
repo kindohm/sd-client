@@ -44,12 +44,6 @@ const shouldSchedule = nextStartTime => {
   return diff <= smallestTimeLeft;
 };
 
-const getStepTimeMult = instrumentsOnStep => {
-  const first = instrumentsOnStep.find(i => i.timeMult !== undefined);
-
-  return !!first ? first.timeMult : 1;
-};
-
 const getStepPackets = instrumentsOnStep => {
   const result = instrumentsOnStep.map(instrument => ({
     address: '/play2',
@@ -70,7 +64,7 @@ const getStepPackets = instrumentsOnStep => {
 };
 
 const getSchedule = ({ startStep, startTime, refTime }) => {
-  const { stepTime, numSteps, instruments } = sequence;
+  const { stepTime, numSteps, instruments, timeMults } = sequence;
   const stepsToBatch = Math.ceil(stepTime / maxFutureTime);
   let numStep = startStep;
   let messages = [];
@@ -94,7 +88,9 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
     });
     numStep = numStep + 1 >= numSteps ? 0 : numStep + 1;
 
-    const timeMult = getStepTimeMult(instrumentsOnStep);
+    const timeMult = timeMults[numStep]; //getStepTimeMult(instrumentsOnStep);
+
+    console.log({ numStep, timeMult, instrumentsOnStep });
 
     if (timeMult && timeMult !== 1.0) {
       accumulation += (timeMult - 1) * stepTime;
