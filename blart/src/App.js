@@ -21,19 +21,24 @@ class App extends Component {
 
   constructor() {
     super();
+    this.doToggle = this.doToggle.bind(this);
     this.sendSequence = this.sendSequence.bind(this);
+    this.handleStepTimeChange = this.handleStepTimeChange.bind(this);
+    this.handleNumStepsChange = this.handleNumStepsChange.bind(this);
   }
 
   componentDidMount() {}
 
   doToggle() {
-    console.log('doing it!');
-    fetch('/toggle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    this.sendSequence()
+      .then(() => {
+        return fetch('/toggle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      })
       .then(resp => {
         return resp.json();
       })
@@ -44,9 +49,8 @@ class App extends Component {
 
   sendSequence() {
     const body = JSON.stringify(this.state);
-    console.log('body', body);
 
-    fetch('/seq', {
+    return fetch('/seq', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -56,9 +60,7 @@ class App extends Component {
       .then(res => {
         return res.json();
       })
-      .then(json => {
-        console.log('/seq response:', json);
-      });
+      .then(json => () => {});
   }
 
   instrumentChanged(changedInstrument) {
@@ -73,7 +75,41 @@ class App extends Component {
     });
   }
 
+  handleStepTimeChange(event) {
+    this.setState(
+      { ...this.state, stepTime: parseFloat(event.target.value) },
+      () => {
+        this.sendSequence();
+      }
+    );
+  }
+
+  handleNumStepsChange(event) {
+    const newNumSteps = parseInt(event.target.value);
+    const newInstruments = this.state.instruments.map(inst => {
+      if (inst.steps.length < newNumSteps) {
+        return {
+          ...inst,
+          steps: inst.steps.concat(
+            new Array(newNumSteps - inst.steps.length)
+              .fill(null)
+              .map(newStep => ({ vel: 0 }))
+          )
+        };
+      } else {
+        return inst;
+      }
+    });
+    this.setState(
+      { ...this.state, numSteps: newNumSteps, instruments: newInstruments },
+      () => {
+        this.sendSequence();
+      }
+    );
+  }
+
   render() {
+    console.log('state', this.state);
     const instruments = this.state.instruments.map(instrument => {
       return (
         <Instrument
@@ -88,7 +124,36 @@ class App extends Component {
       <div className="App">
         <header className="App-header">
           <div>
-            <button onClick={this.doToggle}>do it man</button>
+            <button
+              style={{ padding: '10px', fontSize: '16px' }}
+              onClick={this.doToggle}
+            >
+              play/pause
+            </button>
+            <div>
+              <h3>Step Time</h3>
+              <input
+                type="range"
+                min="15"
+                max="300"
+                step="1"
+                value={this.state.stepTime}
+                onInput={this.handleStepTimeChange}
+                onChange={this.handleStepTimeChange}
+              />
+            </div>
+            <div>
+              <h3># steps {this.state.numSteps}</h3>
+              <input
+                type="range"
+                min="1"
+                max="16"
+                step="1"
+                value={this.state.numSteps}
+                onInput={this.handleNumStepsChange}
+                onChange={this.handleNumStepsChange}
+              />
+            </div>
             {instruments}
           </div>
         </header>

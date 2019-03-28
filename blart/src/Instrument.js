@@ -1,5 +1,5 @@
-import React from "react";
-import StepGain from "./StepGain";
+import React from 'react';
+import StepGain from './StepGain';
 export default class Instrument extends React.Component {
   handleGainChanged(index, newVel) {
     const newSteps = this.props.instrument.steps.map((step, i) => {
@@ -10,7 +10,8 @@ export default class Instrument extends React.Component {
   }
 
   render() {
-    const stepGains = this.props.instrument.steps.map((step, index) => {
+    const steps = this.props.instrument.steps.slice(0, this.props.numSteps);
+    const stepGains = steps.map((step, index) => {
       return (
         <StepGain
           key={index}
