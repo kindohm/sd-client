@@ -8,7 +8,7 @@ const localPort = 57121;
 const localAddress = "0.0.0.0";
 const loopTimeout = 10;
 
-let stepMap = null;
+// let stepMap = null;
 
 let sequence = [],
   playing = false,
@@ -34,21 +34,9 @@ const info = () => {
   };
 };
 
-const createStepMap = sequence => {
-  let map = {};
-  sequence.instruments.forEach(instrument => {
-    map[instrument.name] = 0;
-  });
-  return map;
-};
-
 const setSequence = newSequence => {
-  console.log("new sequence", newSequence);
+  console.log("new sequence", JSON.stringify(newSequence));
   sequence = newSequence;
-
-  if (!stepMap) {
-    stepMap = createStepMap();
-  }
 };
 
 const shouldSchedule = nextStartTime => {
@@ -56,48 +44,53 @@ const shouldSchedule = nextStartTime => {
   return diff <= smallestTimeLeft;
 };
 
-const getStepPackets = sounds => {
-  return sounds.map(sound => ({
+const getStepPackets = instrumentsOnStep => {
+  const result = instrumentsOnStep.map(instrument => ({
     address: "/play2",
     args: [
       {
         type: "s",
         value: "s"
       },
-      { type: "s", value: sound.sample },
+      { type: "s", value: instrument.s },
       { type: "s", value: "gain" },
-      { type: "f", value: sound.gain || 1 }
+      {
+        type: "f",
+        value: instrument.vel
+      }
     ]
   }));
+  return result;
 };
 
 const getSchedule = ({ startStep, startTime, refTime }) => {
-  const stepTime = sequence.stepTime;
+  const { stepTime, numSteps, instruments } = sequence;
   const stepsToBatch = Math.ceil(stepTime / maxFutureTime);
-  const steps = sequence.steps;
   let numStep = startStep;
   let messages = [];
   let accumulation = 0;
 
   for (let i = 0; i < stepsToBatch; i++) {
-    if (!sequence || !steps || steps.length === 0 || steps[numStep] === "") {
-      continue;
-    }
-
-    const { sounds, timeMult } = steps[numStep];
+    const instrumentsOnStep = instruments
+      .map(instrument => {
+        return { ...instrument.steps[numStep], s: instrument.s };
+      })
+      .filter(inst => {
+        return inst.vel === undefined || inst.vel !== 0;
+      });
 
     messages.push({
       timeTag: osc.timeTag(
         (startTime + i * stepTime - refTime + accumulation) / 1000,
         refTime
       ),
-      packets: getStepPackets(sounds)
+      packets: getStepPackets(instrumentsOnStep)
     });
-    numStep = numStep + 1 >= steps.length ? 0 : numStep + 1;
+    numStep = numStep + 1 >= numSteps ? 0 : numStep + 1;
 
-    if (timeMult && timeMult !== 1.0) {
-      accumulation += (timeMult - 1) * stepTime;
-    }
+    // if (timeMult && timeMult !== 1.0) {
+    //   accumulation += (timeMult - 1) * stepTime;
+    // }
   }
 
   return {
@@ -105,7 +98,7 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
     nextStartTime: startTime + stepsToBatch * stepTime + accumulation,
     // nextStartStep:
     //   startStep + stepsToBatch >= steps.length ? 0 : startStep + stepsToBatch
-    nextStartStep: !!steps ? (startStep + stepsToBatch) % steps.length : 0
+    nextStartStep: !!sequence ? (startStep + stepsToBatch) % numSteps : 0
   };
 };
 
