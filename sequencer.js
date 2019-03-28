@@ -1,11 +1,11 @@
-const osc = require("osc");
+const osc = require('osc');
 const maxFutureTime = 250;
 // let stepTime = 200
 const smallestTimeLeft = 50; // should be >= 40
-const destinationServer = "127.0.0.1";
+const destinationServer = '127.0.0.1';
 const destinationPort = 57120;
 const localPort = 57121;
-const localAddress = "0.0.0.0";
+const localAddress = '0.0.0.0';
 const loopTimeout = 10;
 
 // let stepMap = null;
@@ -24,7 +24,7 @@ const udpPort = new osc.UDPPort({
 
 udpPort.open();
 
-udpPort.on("ready", function() {
+udpPort.on('ready', function() {
   loop();
 });
 
@@ -35,7 +35,7 @@ const info = () => {
 };
 
 const setSequence = newSequence => {
-  console.log("new sequence", JSON.stringify(newSequence));
+  console.log('new sequence', JSON.stringify(newSequence));
   sequence = newSequence;
 };
 
@@ -44,18 +44,24 @@ const shouldSchedule = nextStartTime => {
   return diff <= smallestTimeLeft;
 };
 
+const getStepTimeMult = instrumentsOnStep => {
+  const first = instrumentsOnStep.find(i => i.timeMult !== undefined);
+
+  return !!first ? first.timeMult : 1;
+};
+
 const getStepPackets = instrumentsOnStep => {
   const result = instrumentsOnStep.map(instrument => ({
-    address: "/play2",
+    address: '/play2',
     args: [
       {
-        type: "s",
-        value: "s"
+        type: 's',
+        value: 's'
       },
-      { type: "s", value: instrument.s },
-      { type: "s", value: "gain" },
+      { type: 's', value: instrument.s },
+      { type: 's', value: 'gain' },
       {
-        type: "f",
+        type: 'f',
         value: instrument.vel
       }
     ]
@@ -88,9 +94,11 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
     });
     numStep = numStep + 1 >= numSteps ? 0 : numStep + 1;
 
-    // if (timeMult && timeMult !== 1.0) {
-    //   accumulation += (timeMult - 1) * stepTime;
-    // }
+    const timeMult = getStepTimeMult(instrumentsOnStep);
+
+    if (timeMult && timeMult !== 1.0) {
+      accumulation += (timeMult - 1) * stepTime;
+    }
   }
 
   return {
@@ -141,7 +149,7 @@ const loop = () => {
 const toggle = () => {
   playing = !playing;
   toggledOn = playing;
-  console.log("sequencer.playing", playing);
+  console.log('sequencer.playing', playing);
 };
 
 module.exports = { setSequence, toggle, info };

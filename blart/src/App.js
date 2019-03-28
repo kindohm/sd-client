@@ -16,7 +16,8 @@ class App extends Component {
         s: 'cp',
         steps: [{ vel: 0 }, { vel: 0 }, { vel: 1 }, { vel: 0 }, { vel: 1 }]
       }
-    ]
+    ],
+    view: 'gains'
   };
 
   constructor() {
@@ -25,6 +26,7 @@ class App extends Component {
     this.sendSequence = this.sendSequence.bind(this);
     this.handleStepTimeChange = this.handleStepTimeChange.bind(this);
     this.handleNumStepsChange = this.handleNumStepsChange.bind(this);
+    this.handleViewChanged = this.handleViewChanged.bind(this);
   }
 
   componentDidMount() {}
@@ -40,6 +42,7 @@ class App extends Component {
         });
       })
       .then(resp => {
+        console.log('resp', resp);
         return resp.json();
       })
       .then(json => {
@@ -73,6 +76,10 @@ class App extends Component {
     this.setState({ ...this.state, instruments: newInstruments }, () => {
       this.sendSequence();
     });
+  }
+
+  handleViewChanged(event) {
+    this.setState({ ...this.state, view: event.target.value });
   }
 
   handleStepTimeChange(event) {
@@ -117,6 +124,7 @@ class App extends Component {
           instrument={instrument}
           numSteps={this.state.numSteps}
           instrumentChanged={i => this.instrumentChanged(i)}
+          view={this.state.view}
         />
       );
     });
@@ -153,6 +161,12 @@ class App extends Component {
                 onInput={this.handleNumStepsChange}
                 onChange={this.handleNumStepsChange}
               />
+            </div>
+            <div>
+              <select onChange={this.handleViewChanged}>
+                <option value="gains">gains</option>
+                <option value="mults">mults</option>
+              </select>
             </div>
             {instruments}
           </div>
