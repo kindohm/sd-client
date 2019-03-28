@@ -51,6 +51,7 @@ class App extends Component {
   }
 
   sendSequence() {
+    console.log('sending', this.state);
     const body = JSON.stringify(this.state);
 
     return fetch('/seq', {

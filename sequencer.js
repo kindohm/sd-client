@@ -1,14 +1,11 @@
 const osc = require('osc');
 const maxFutureTime = 250;
-// let stepTime = 200
 const smallestTimeLeft = 50; // should be >= 40
 const destinationServer = '127.0.0.1';
 const destinationPort = 57120;
 const localPort = 57121;
 const localAddress = '0.0.0.0';
 const loopTimeout = 10;
-
-// let stepMap = null;
 
 let sequence = [],
   playing = false,
@@ -35,7 +32,6 @@ const info = () => {
 };
 
 const setSequence = newSequence => {
-  console.log('new sequence', JSON.stringify(newSequence));
   sequence = newSequence;
 };
 
@@ -63,6 +59,13 @@ const getStepPackets = instrumentsOnStep => {
   return result;
 };
 
+const getInstrumentsOnStep = (instruments, numStep) => {
+  const result = instruments.map(instrument => {
+    return { ...instrument.steps[numStep], s: instrument.s };
+  });
+  return result;
+};
+
 const getSchedule = ({ startStep, startTime, refTime }) => {
   const { stepTime, numSteps, instruments, timeMults } = sequence;
   const stepsToBatch = Math.ceil(stepTime / maxFutureTime);
@@ -71,13 +74,8 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
   let accumulation = 0;
 
   for (let i = 0; i < stepsToBatch; i++) {
-    const instrumentsOnStep = instruments
-      .map(instrument => {
-        return { ...instrument.steps[numStep], s: instrument.s };
-      })
-      .filter(inst => {
-        return inst.vel === undefined || inst.vel !== 0;
-      });
+    const timeMult = timeMults[numStep];
+    const instrumentsOnStep = getInstrumentsOnStep(instruments, numStep);
 
     messages.push({
       timeTag: osc.timeTag(
@@ -88,10 +86,6 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
     });
     numStep = numStep + 1 >= numSteps ? 0 : numStep + 1;
 
-    const timeMult = timeMults[numStep]; //getStepTimeMult(instrumentsOnStep);
-
-    console.log({ numStep, timeMult, instrumentsOnStep });
-
     if (timeMult && timeMult !== 1.0) {
       accumulation += (timeMult - 1) * stepTime;
     }
@@ -100,8 +94,6 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
   return {
     messages,
     nextStartTime: startTime + stepsToBatch * stepTime + accumulation,
-    // nextStartStep:
-    //   startStep + stepsToBatch >= steps.length ? 0 : startStep + stepsToBatch
     nextStartStep: !!sequence ? (startStep + stepsToBatch) % numSteps : 0
   };
 };
