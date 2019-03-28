@@ -1,5 +1,6 @@
 import React from 'react';
 import StepGain from './StepGain';
+import StepReps from './StepReps';
 
 export default class Instrument extends React.Component {
   handleGainChanged(index, newVel) {
@@ -10,8 +11,17 @@ export default class Instrument extends React.Component {
     this.props.instrumentChanged(newInstrument);
   }
 
+  handleRepsChanged(index, newReps) {
+    const newSteps = this.props.instrument.steps.map((step, i) => {
+      return i === index ? { ...step, reps: parseFloat(newReps) } : step;
+    });
+    const newInstrument = { ...this.props.instrument, steps: newSteps };
+    this.props.instrumentChanged(newInstrument);
+  }
+
   render() {
     const steps = this.props.instrument.steps.slice(0, this.props.numSteps);
+
     const stepGains = steps.map((step, index) => {
       return (
         <StepGain
@@ -21,10 +31,32 @@ export default class Instrument extends React.Component {
         />
       );
     });
+
+    const stepReps = steps.map((step, index) => {
+      return (
+        <StepReps
+          key={index}
+          value={step.vel}
+          repsChanged={val => this.handleRepsChanged(index, val)}
+        />
+      );
+    });
+
     return (
-      <div>
+      <div style={{ backgroundColor: '#eee', padding: '5px', margin: '5px' }}>
         <h4>{this.props.instrument.name}</h4>
-        <div>{stepGains}</div>
+        <div>
+          <p>
+            <strong>Gains</strong>
+          </p>
+          {stepGains}
+        </div>
+        <div>
+          <p>
+            <strong>Reps</strong>
+          </p>
+          {stepReps}
+        </div>
       </div>
     );
   }
