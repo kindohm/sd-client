@@ -9,33 +9,59 @@
   </head>
   <body>
     <div>
-      <button onclick="clickme()">Play / Pause</button>
+        <button onclick="setSequence()">Set Sequence</button>
+        <button onclick="clickme()">Play / Pause</button>
     </div>
     <div>
       <input
+        id="tempoSlider"
         type="range"
         min="1"
         max="100"
         value="50"
-        oninput="setTempo(this.value)"
+        oninput="setSequence()"
       />
     </div>
     <div>
       <textarea id="rawSequence" onchange="setSequence()"></textarea>
     </div>
     <script>
+
+
+const testSequence = {
+  stepTime: 100,
+  steps: [
+    {
+      sounds: [
+        { sample: 'drum', gain: 1 }, 
+        {sample: 'arpy'}]
+    },
+    {
+      sounds: [{ sample: 'drum', gain: 0.95 }]
+    }
+  ]
+}
+
+
+
       const socket = io()
       function clickme() {
         socket.emit('toggle', {})
       }
 
-      function setTempo(e) {
-        socket.emit('setStepTime', e)
+      // function setTempo(e) {
+      //   socket.emit('setStepTime', e)
+      // }
+
+      const convertRange = (value, r1, r2) => {
+        return ((value - r1[0]) * (r2[1] - r2[0])) / (r1[1] - r1[0]) + r2[0]
       }
 
       function setSequence() {
-        const raw = document.getElementById('rawSequence').value
-        const seq = JSON.parse(raw)
+        // const raw = document.getElementById('rawSequence').value
+        const tempo = document.getElementById('tempoSlider').value
+        const seq = {...testSequence}
+        seq.stepTime = convertRange(tempo, [1,100],[15,400])
         console.log('setting sequence', seq)
         socket.emit('setSequence', seq)
       }

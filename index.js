@@ -1,33 +1,27 @@
-const path = require('path')
-const sequencer = require('./sequencer')
-const express = require('express')
-const app = express()
-const http = require('http').Server(app)
-const io = require('socket.io')(http)
-const convertRange = require('./convertRange')
-const port = 3000
-const testSequence = require('./testSequence')
+const path = require("path");
+const sequencer = require("./sequencer");
+const express = require("express");
+const app = express();
+const http = require("http").Server(app);
+// const io = require("socket.io")(http);
+const convertRange = require("./convertRange");
+const port = 5000;
+const testSequence = require("./testSequence");
+var bodyParser = require("body-parser");
 
-app.use('/', express.static(path.join(__dirname, 'public')))
+app.use(bodyParser.json());
+app.use("/", express.static(path.join(__dirname, "public")));
 
-io.on('connection', function(socket) {
-  console.log('a user connected')
-  socket.on('toggle', msg => {
-    console.log('toggle', msg)
-    sequencer.toggle()
-  })
-  socket.on('setStepTime', msg => {
-    const newStepTime = convertRange(msg, [1, 100], [10, 250])
-    console.log('setting new step time', newStepTime)
-    sequencer.setStepTime(newStepTime)
-  })
-  socket.on('setSequence', seq => {
-    console.log('new sequence', seq)
-    sequencer.setSequence(seq)
-  })
-})
+app.post("/toggle", (req, res) => {
+  sequencer.toggle();
+  res.json(sequencer.info());
+});
 
-http.listen(port, console.log(`listening on *:${port}`))
+app.post("/seq", (req, res) => {
+  res.json({});
+});
 
-sequencer.setSequence(testSequence)
-sequencer.toggle()
+http.listen(port, console.log(`listening on *:${port}`));
+
+// sequencer.setSequence(testSequence);
+// sequencer.toggle()
