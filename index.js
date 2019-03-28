@@ -6,7 +6,7 @@ const http = require("http").Server(app);
 // const io = require("socket.io")(http);
 const convertRange = require("./convertRange");
 const port = 5000;
-const testSequence = require("./testSequence");
+const testSequence2 = require("./testSequence2");
 var bodyParser = require("body-parser");
 
 app.use(bodyParser.json());
@@ -23,5 +23,5 @@ app.post("/seq", (req, res) => {
 
 http.listen(port, console.log(`listening on *:${port}`));
 
-// sequencer.setSequence(testSequence);
-// sequencer.toggle()
+sequencer.setSequence(testSequence2);
+sequencer.toggle();

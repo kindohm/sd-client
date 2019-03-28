@@ -7,7 +7,8 @@ const destinationPort = 57120;
 const localPort = 57121;
 const localAddress = "0.0.0.0";
 const loopTimeout = 10;
-const defaultNextStartTime = 100;
+
+let stepMap = null;
 
 let sequence = [],
   playing = false,
@@ -33,9 +34,21 @@ const info = () => {
   };
 };
 
+const createStepMap = sequence => {
+  let map = {};
+  sequence.instruments.forEach(instrument => {
+    map[instrument.name] = 0;
+  });
+  return map;
+};
+
 const setSequence = newSequence => {
   console.log("new sequence", newSequence);
   sequence = newSequence;
+
+  if (!stepMap) {
+    stepMap = createStepMap();
+  }
 };
 
 const shouldSchedule = nextStartTime => {
@@ -116,16 +129,16 @@ const loop = () => {
 
   setTimeout(() => {
     if (shouldSchedule(nextStartTime)) {
-      const batch = getSchedule({
+      const schedule = getSchedule({
         startStep: currentStep,
         startTime: nextStartTime,
         refTime: now
       });
 
-      nextStartTime = batch.nextStartTime;
-      currentStep = batch.nextStartStep;
+      nextStartTime = schedule.nextStartTime;
+      currentStep = schedule.nextStartStep;
 
-      sendMessages(batch.messages);
+      sendMessages(schedule.messages);
     }
 
     loop();
