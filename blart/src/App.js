@@ -11,11 +11,22 @@ class App extends Component {
       {
         name: 'kick',
         s: 'bd',
-        steps: [{ vel: 1 }, { vel: 1 }, { vel: 0 }, { vel: 0 }, { vel: 1 }]
+        steps: [
+          { vel: 1, reps: 0 },
+          { vel: 1 },
+          { vel: 0 },
+          { vel: 0 },
+          { vel: 1 }
+        ]
       },
       {
         name: 'clap',
         s: 'cp',
+        steps: [{ vel: 0 }, { vel: 0 }, { vel: 1 }, { vel: 0 }, { vel: 1 }]
+      },
+      {
+        name: 'rave2',
+        s: 'rave2',
         steps: [{ vel: 0 }, { vel: 0 }, { vel: 1 }, { vel: 0 }, { vel: 1 }]
       }
     ]
@@ -42,16 +53,16 @@ class App extends Component {
         });
       })
       .then(resp => {
-        console.log('resp', resp);
+        // console.log('resp', resp);
         return resp.json();
       })
       .then(json => {
-        console.log('/toggle', json);
+        // console.log('/toggle', json);
       });
   }
 
   sendSequence() {
-    console.log('sending', this.state);
+    // console.log('sending', this.state);
     const body = JSON.stringify(this.state);
 
     return fetch('/seq', {

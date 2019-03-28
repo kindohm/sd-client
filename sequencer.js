@@ -40,29 +40,39 @@ const shouldSchedule = nextStartTime => {
   return diff <= smallestTimeLeft;
 };
 
-const getStepPackets = instrumentsOnStep => {
-  const result = instrumentsOnStep.map(instrument => ({
+const getSoundPacket = (sample, gain) => {
+  return {
     address: '/play2',
     args: [
       {
         type: 's',
         value: 's'
       },
-      { type: 's', value: instrument.s },
+      { type: 's', value: sample },
       { type: 's', value: 'gain' },
       {
         type: 'f',
-        value: instrument.vel
+        value: gain
       }
     ]
-  }));
+  };
+};
+
+const getStepPackets = instrumentsOnStep => {
+  const result = instrumentsOnStep.map(instrument =>
+    getSoundPacket(instrument.s, instrument.vel)
+  );
   return result;
 };
 
 const getInstrumentsOnStep = (instruments, numStep) => {
-  const result = instruments.map(instrument => {
-    return { ...instrument.steps[numStep], s: instrument.s };
-  });
+  const result = instruments
+    .map(instrument => {
+      return { ...instrument.steps[numStep], s: instrument.s };
+    })
+    .filter(inst => {
+      return inst.vel === undefined || inst.vel !== 0;
+    });
   return result;
 };
 
@@ -77,13 +87,26 @@ const getSchedule = ({ startStep, startTime, refTime }) => {
     const timeMult = timeMults[numStep];
     const instrumentsOnStep = getInstrumentsOnStep(instruments, numStep);
 
+    const timestamp = startTime + i * stepTime - refTime + accumulation;
     messages.push({
-      timeTag: osc.timeTag(
-        (startTime + i * stepTime - refTime + accumulation) / 1000,
-        refTime
-      ),
+      timeTag: osc.timeTag(timestamp / 1000, refTime),
       packets: getStepPackets(instrumentsOnStep)
     });
+
+    const instrumentsWithReps = instrumentsOnStep.filter(i => i.reps > 0);
+    instrumentsWithReps.forEach(inst => {
+      const { reps, vel } = inst;
+      const repUnitTime = (stepTime * timeMult) / (reps + 1);
+      for (let x = 0; x < reps; x++) {
+        const msg = getSoundPacket(inst.s, vel);
+        const repTimestamp = timestamp + repUnitTime * (x + 1);
+        messages.push({
+          timeTag: osc.timeTag(repTimestamp / 1000, refTime),
+          packets: [msg]
+        });
+      }
+    });
+
     numStep = numStep + 1 >= numSteps ? 0 : numStep + 1;
 
     if (timeMult && timeMult !== 1.0) {

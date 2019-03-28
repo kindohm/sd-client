@@ -36,7 +36,7 @@ export default class Instrument extends React.Component {
       return (
         <StepReps
           key={index}
-          value={step.vel}
+          value={step.reps || 0}
           repsChanged={val => this.handleRepsChanged(index, val)}
         />
       );
