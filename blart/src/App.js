@@ -10,7 +10,7 @@ class App extends Component {
     instruments: [
       {
         name: 'kick',
-        s: 'bd',
+        s: '0',
         steps: [
           { vel: 1, reps: 0 },
           { vel: 1 },
@@ -21,12 +21,12 @@ class App extends Component {
       },
       {
         name: 'clap',
-        s: 'cp',
+        s: '3',
         steps: [{ vel: 0 }, { vel: 0 }, { vel: 1 }, { vel: 0 }, { vel: 1 }]
       },
       {
         name: 'rave2',
-        s: 'rave2',
+        s: '1',
         steps: [{ vel: 0 }, { vel: 0 }, { vel: 1 }, { vel: 0 }, { vel: 1 }]
       }
     ]

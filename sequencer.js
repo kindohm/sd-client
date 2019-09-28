@@ -48,11 +48,15 @@ const getSoundPacket = (sample, gain) => {
         type: 's',
         value: 's'
       },
-      { type: 's', value: sample },
+      { type: 's', value: 'midi' },
+      { type: 's', value: 'midinote' },
+      { type: 'f', value: parseFloat(sample) },
+      { type: 's', value: 'midichan' },
+      { type: 'f', value: 0 },
       { type: 's', value: 'gain' },
       {
         type: 'f',
-        value: gain
+        value: gain * 1.2
       }
     ]
   };

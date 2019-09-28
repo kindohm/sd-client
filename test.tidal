@@ -1,3 +1,275 @@
-d1 $ s "bd*8?"
+setcps (160/120/2)
+
+do
+    let var = 0.3
+        varsgain = 0.4
+        varab = ""
+        abvals = [1,127]
+        vardgain = 1
+        reps = 5
+        hold = (1/4)
+        chan = 12
+    d1 
+        $ sometimesBy 0.2 (stutWith 2 (0.0625) id)
+        $ shift
+        $ fast (discretise 2 $ choose [1,1,1,2])
+        $ stack [
+            sometimesBy var ((# midinote 3) . (|* gain vardgain))
+                $ shift 
+                $ rep reps 
+                $ slow 2 
+                $ midinote 0 
+                # gain 1.2
+            , stack [
+                sometimesBy var (|* gain varsgain) 
+                    $ shift 
+                    $ rep reps 
+                    $ slow 2 
+                    $ note "0" 
+                    # gain 1.1
+                , shift $ rep reps $ slow 2 $ ccn 1 # ccv (discretise hold $ range 1 127 $ shrand 303)
+                , shift $ rep reps $ slow 2 $ ccn 2 # ccv (discretise hold $ range 1 127 $ shrand 304)
+                , shift $ rep reps $ slow 2 $ ccn 3 # ccv (discretise hold $ range 1 127 $ shrand 305)
+                , sometimesBy var (# ccv varab)
+                    $ shift $ rep reps $ slow 2 $ ccn 5 # ccv (discretise hold $ shift' 306 $ choose abvals)
+            ] # midichan chan
+        ]
+        # s "midi"
 
 hush
+
+
+
+let 
+    inv 1 = 0
+    inv 0 = 1
+    synthGainMin = 0.4
+    synthGainMax = 1.1
+    drumsGainMax = 1.2
+    ccScaleMin x = (63.5 - x*63.5)
+    ccScaleMax x = (63.5 + x*63.5)
+    scene0 = (# ccv 0)
+    scene1 = (# ccv 1)
+    rollCore f p = shift $ sometimesBy 0.2 (f) $ rep 7 $ slow 2 $ p
+    rootDrums = s "midi" # midichan 0
+    rootSynth = s "midi" # midichan 15
+    rollDrums1Core scenePat = stack [
+                        rollCore (# midinote 3) $ midinote 0 # gain drumsGainMax
+                        , rollCore id $ ccv scenePat # ccn 92 ] # rootDrums
+    rollDrums1asdf = rollDrums1Core 0
+    rollDrums1 scenePat = rollDrums1Core scenePat
+    rollSynth1Core accentGainAmount xfadeDefault xfadeAccent ccVary = stack [ 
+                    rollCore (# gain accentGainAmount) $ note 0 # gain synthGainMax
+                    , rollCore (# ccv (xfadeAccent*127)) $ ccv (xfadeDefault*127) # ccn 5
+                    , rollCore id $ ccv (discretise (1/2) $ range (ccScaleMin ccVary) (ccScaleMax ccVary) $ shrand 1000) # ccn 1
+                    , rollCore id $ ccv (discretise (1/2) $ range (ccScaleMin ccVary) (ccScaleMax ccVary) $ shrand 1001) # ccn 2
+                    , rollCore id $ ccv (discretise (1/2) $ range (ccScaleMin ccVary) (ccScaleMax ccVary) $ shrand 1002) # ccn 3
+                ] # rootSynth 
+    rollSynth1 thru ccVary xfadeDefault xfadeAccent = rollSynth1Core (if thru == 0 then synthGainMin else synthGainMax) xfadeDefault xfadeAccent ccVary
+    -- rollSynth1Thru ccVary xfadeDefault xfadeAccent = rollSynth1Core synthGainMax xfadeDefault xfadeAccent ccVary
+    drumEuclidPat num pat = gain pat # midinote num # rootDrums
+    hatEuclid pat =  sometimesBy 0.07 (# midinote 9) $ drumEuclidPat 8 pat
+    percEuclid pat = drumEuclidPat "{5 6 7}%16" pat
+    euclidHat = hatEuclid
+    anchor1 = midinote "~ 1" # s "midi" # midichan 0
+    chan chanPat p = (# midichan chanPat) $ p
+
+
+
+
+
+
+hush
+
+
+
+
+
+
+
+
+
+
+
+do
+    let mod p = shift $ whenmod 15 12 (iter 8) 
+                $ whenmod 10 5 move $ every 3 rev $ sometimes one $ shift $ p
+    d1 $ mod $ chan 12 $ rollSynth1 1 1 1 0
+    d2 $ mod $ rollDrums1 (discretise 1 $ choose [0])
+    d3 $ mod $ euclidHat "1(<3 7 13 5 11 9>,16,<0 8 3>)"
+    d4 $ mod $ percEuclid "1*16?"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+do
+    let mod p = whenmod 18 15 (slow 2.5) 
+                    $ whenmod 10 7 (degrade) $ shift 
+                    $ whenmod 17 14 (iter 8) 
+                    $ every 3 rev
+                    $ whenmod 10 5 move $ sometimes one $ p
+    d1 $ g $ mod $ chan "[12 15]/12" $ rollSynth1 1 1 1 0
+    d2 $ g $ mod $ rollDrums1 (discretise (1/2) $ choose [0,1])
+    d3 $ g $ euclidHat "1(<3 9 5 11 7>,16,<0 7 3 4>)"
+    d4 $ percEuclid "1*16?"
+
+hush
+
+
+
+
+
+do
+    d1 $ bdPat1 # kick
+    d2 $ percPat2 # perc
+    d3 $ hatPat3 # hat
+    d4 $ bdPat1 # synth 
+    d5 $ varyxfade $ bdPat1 # xfade
+    d6 $ varyx 10 $ bdPat1 # synthX 
+    d7 $ varyy 11 $ bdPat1 # synthY 
+    d8 $ varyz 21 $ bdPat1 # synthZ 
+
+
+
+
+
+let 
+    synth1 = note 0 # s "midi"
+    x = ccn 1 # s "midi"
+    y = ccn 2 # s "midi"
+    z = ccn 3 # s "midi"
+    xfade = ccn 5 # s "midi"
+    xHold = ccv (discretise (1/4) $ range 1 127 $ shrand 1000)
+    yHold = ccv (discretise (1/4) $ range 1 127 $ shrand 1001)
+    zHold = ccv (discretise (1/4) $ range 1 127 $ shrand 1002)
+    bd = midinote 0 # s "midi" # midichan 0
+    ch = midinote 8 # s "midi" # midichan 0
+    perc = s "midi*16" # midinote (shift' 9238 $ choose [5,6,7]) # midichan 0
+    cpX p = (# midinote 3) $ p
+    ohX p = (# midinote 9) $ p
+    mainPat1 = (|* gain 1.15) $ gain (rep 7 $ slow 2 $ 1)
+    hatPat1 = gain "1(<3 7 5 13 9 11>,16,<0 7 4 11>)"
+    percPat1 = gain "1(<14 12 5 13 9 11>,16,<2 5 7 10>)"
+    change x f p = sometimesBy x f $ p
+
+
+do
+    let chan = "[15]/4"
+    let mod p = id $ p
+    p "bd"      $ mod $ change 0.3 (cpX) $ mainPat1 # bd
+    p "hat"     $ mod $ change 0.1 (ohX) $ shift $ hatPat1 # ch
+    p "perc"    $ mod $ percPat1 # perc
+    p "synth"   $ mod $ change 0.3 (|* gain 1.1) $ mainPat1 # synth1 # midichan chan
+    p "x"       $ mod $ mainPat1 # x # midichan chan # xHold
+    p "y"       $ mod $ mainPat1 # y # midichan chan # yHold
+    p "z"       $ mod $ mainPat1 # z # midichan chan # zHold
+    p "xfade"   $ mod $ change 0.3 (# ccv 127) $ mainPat1 # xfade # midichan chan # ccv 1
+
+
+d1 
+    $ s "[s s s k*8]" 
+    # cps      "[1 1   1   0.125]"
+
+    hush
+
+    d1 $ s "s s s k:7*4" # cps "[1 1 1 0.125]"
+
+hush
+
+setcps (160/120/2)
+
+do
+    let inv 1 = 0
+    let inv 0 = 1
+    let pat = "{1 0 ~ 1 0 1 1 ~ 0 0 1 1 ~ }%16"
+    d1 
+        $ (|* gain 1.15)
+        $ stack [
+            gain pat #midinote 0
+            , gain (pat) # midinote 3
+            , gain (inv <$> pat) # midinote "[4,5,6]"
+        ] # s "midi"
+
+hush
+
+setcps (160/120/2)
+
+d10 
+    $ degradeBy 0.15 
+    $ density 16 
+    $ s "perc2" 
+    # n (irand 32)  
+    # rel (range 0.5 1 $ (3 <~) $ rand)
+    # speed (range 1 1 $ (1 <~) $ rand)
+    # attack 0.001
+
+d1 silence
+
+d10 $ degradeBy 0.01 $ brakk "jung7*8" # gain 1.2
+
+d2
+    $ every 4 (rip 0.9 0.1)
+    $ stack [
+        sometimes one $ shift $ sometimes roll' $ shift $ s "{k cp ~ ~ ~ ~ ~ k? k? k k}%8" 
+            # n 0 # cut "-1"
+        , shift $ shift $ degradeBy 0.3 $ gain "{~ ~ 1*2 1*2 1*2 1*2 1*2 1*2 1*2 1*2 1*2}%8" # n (irand 32) # cut 33 # s "perc1" 
+            # rel 0.05 # hpf 400 # lpf 10000 ]
+
+d3 
+    $ degradeBy 0.4 $ shift $ sometimesBy 0.05 (# s "oh1") 
+    $ shift $ gain "{1*4 1*4 ~ 1*4? 1*4? ~ ~}%4" # s "ch1" # cut "1341324" # lpf 6000
+
+d1 
+    $ (|+ note (shift' 23111 $ choose [0,0,0,0,-12]))
+    $ (|+ note "-7") 
+    $ stack [ 
+        slow (shift' 10 $ choose [1,1.1..2]) $ degradeBy 0.3 $ shift' 202 $ gain "1" 
+            # note (scale "ritusen" (shift' 2343 $ choose [0..12]))
+            # legato (shift' 102 $ choose [1..4])
+        , slow (shift' 11 $ choose [1,1.1..2]) $ degradeBy 0.3 $ shift' 201 $ gain "1" 
+            # note (scale "ritusen" (shift' 243 $ choose [0..12])) 
+            # legato (shift' 101 $ choose [1..4])
+        , slow (shift' 12 $ choose [1,1.1..2]) $ degradeBy 0.3 $ shift' 203 $ gain "1" 
+            # note (scale "ritusen" (shift' 1243 $ choose [0..12])) 
+            # legato (shift' 103 $ choose [1..4])
+        , slow (shift' 13 $ choose [1,1.1..2]) $ degradeBy 0.3 $ shift' 1203 $ gain "1" 
+            # note (scale "ritusen" (shift' 11243 $ choose [0..12])) 
+            # legato (shift' 1103 $ choose [1..4])
+        ] # s "midi" # midichan 15
+
+d1 
+    $ jux (iter 8 . rev) 
+    $ (# speed "[1]/6")
+    $ slow 64
+    $ striate' (1024) (1/10) 
+    $ s "alone"
+    # speed "1"
+    # hpf 400
+
+hush
+
